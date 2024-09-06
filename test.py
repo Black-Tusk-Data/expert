@@ -18,6 +18,7 @@ def main():
         path="./navid.kb",
         embedding_size=768,
     )
+
     pdf_parser = PdfParser(Path("exhibit-2B-distribution-system-plan.pdf"))
 
     embedder = JinaAiClient("jina-embeddings-v2-base-en")
@@ -27,8 +28,19 @@ def main():
     )
 
     pages = list(pdf_parser.iter_pages())
+
+    last_ingested_page = kb.db.query("""
+    SELECT max(metadata_json->>'page') last_page
+      FROM embedded_fragment
+    """)[0]["last_page"]
+    # page numbers are '1' indexed...
+    last_ingested_page_idx = last_ingested_page - 1
+
     progress_bar = tqdm(range(len(pages)))
     for i, page in enumerate(pages):
+        if i <= last_ingested_page_idx:
+            progress_bar.update(1)
+            continue
         summary = summarizer.summarize_page(page)
         texts = [
             summary.text_summary,
