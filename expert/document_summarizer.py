@@ -24,7 +24,7 @@ class DocumentSummarizer:
             self,
             *,
             text_client: LlmChatClient,
-            img_client: LlmChatClient,
+            img_client: LlmChatClient | None = None,
     ):
         self.text_client = text_client
         self.img_client = img_client
@@ -37,11 +37,12 @@ class DocumentSummarizer:
         text_summary = text_completion.content
 
         img_summaries: list[str] = []
-        for image in page.images:
-            img_prompt = self._get_img_summarization_prompt(image)
-            img_completion = self.img_client.chat_completion(img_prompt)
-            img_summaries.append(img_completion.content)
-            pass
+        if self.img_client:
+            for image in page.images:
+                img_prompt = self._get_img_summarization_prompt(image)
+                img_completion = self.img_client.chat_completion(img_prompt)
+                img_summaries.append(img_completion.content)
+                pass
 
         return PageSummary(
             text_summary=text_summary,
@@ -49,15 +50,8 @@ class DocumentSummarizer:
         )
 
     def _get_img_summarization_prompt(self, image: Image) -> list[ChatBlock]:
-        # system_prompt = " ".join([
-        #     "You are a helpful expert in a huge number of topics.",
-        #     "You are deisgned to summarize images from pages of a technical document, one page at a time.",
-        #     "Given an image from a single page of a document, you respond with a SUCCINCT summary of the information described in that images.",
-        # ])
-        # blocks = [ChatBlock(
-        #     role="system",
-        #     content=system_prompt,
-        # )]
+        # The Groq llava model does not support a system prompt, which is why we only use a user prompt here.
+        # Indeed, we might want to have any clients of the DocumentSummarizer specify the prompt format.
         blocks = []
         img_fname = image.dump_to_file(str(TMP_DIR / ".doc-image"))
         with open(img_fname, "rb") as f:

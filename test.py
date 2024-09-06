@@ -24,7 +24,7 @@ def main():
     embedder = JinaAiClient("jina-embeddings-v2-base-en")
     summarizer = DocumentSummarizer(
         text_client=GroqClient("llama-3.1-8b-instant"),
-        img_client=GroqClient("llava-v1.5-7b-4096-preview"),
+        # img_client=GroqClient("llava-v1.5-7b-4096-preview"),
     )
 
     pages = list(pdf_parser.iter_pages())
