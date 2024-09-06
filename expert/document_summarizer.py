@@ -1,5 +1,6 @@
 import base64
 from pathlib import Path
+from typing import NamedTuple
 
 from expert_doc import Image, ParsedPage
 from expert_llm import (
@@ -10,6 +11,12 @@ from expert_llm import (
 
 
 TMP_DIR = Path("/tmp")
+
+
+class PageSummary(NamedTuple):
+    text_summary: str
+    img_summaries: list[str]
+    pass
 
 
 class DocumentSummarizer:
@@ -23,34 +30,40 @@ class DocumentSummarizer:
         self.img_client = img_client
         return
 
-    def summarize_page(self, page: ParsedPage) -> list[str]:
+    def summarize_page(self, page: ParsedPage) -> PageSummary:
+
         text_prompt = self._get_text_summarization_prompt(page)
         text_completion = self.text_client.chat_completion(text_prompt)
-        summaries = [text_completion.content]
+        text_summary = text_completion.content
 
+        img_summaries: list[str] = []
         for image in page.images:
             img_prompt = self._get_img_summarization_prompt(image)
             img_completion = self.img_client.chat_completion(img_prompt)
-            summaries.append(img_completion.content)
+            img_summaries.append(img_completion.content)
             pass
-        
-        return summaries
+
+        return PageSummary(
+            text_summary=text_summary,
+            img_summaries=img_summaries,
+        )
 
     def _get_img_summarization_prompt(self, image: Image) -> list[ChatBlock]:
-        system_prompt = " ".join([
-            "You are a helpful expert in a huge number of topics.",
-            "You are deisgned to summarize images from pages of a technical document, one page at a time.",
-            "Given an image from a single page of a document, you respond with a SUCCINCT summary of the information described in that images.",
-        ])
-        blocks = [ChatBlock(
-            role="system",
-            content=system_prompt,
-        )]
+        # system_prompt = " ".join([
+        #     "You are a helpful expert in a huge number of topics.",
+        #     "You are deisgned to summarize images from pages of a technical document, one page at a time.",
+        #     "Given an image from a single page of a document, you respond with a SUCCINCT summary of the information described in that images.",
+        # ])
+        # blocks = [ChatBlock(
+        #     role="system",
+        #     content=system_prompt,
+        # )]
+        blocks = []
         img_fname = image.dump_to_file(str(TMP_DIR / ".doc-image"))
         with open(img_fname, "rb") as f:
             blocks.append(ChatBlock(
                 role="user",
-                content=f"Summarize the following image:",
+                content=f"Summarize the information contained in the following image:",
                 image_b64=base64.b64encode(f.read()).decode("utf-8"),
             ))
         return blocks
