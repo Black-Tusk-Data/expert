@@ -49,15 +49,22 @@ query_parser.add_argument(
     help="Path to knowledge base",
 )
 query_parser.add_argument(
+    "--query",
+    type=str,
+    required=True,
+    help="Query for the knowledge assistant",
+)
+query_parser.add_argument(
     "--n-references",
     dest="n_references",
+    default=5,
     type=int,
     required=False,
     help="Number of page references to fetch",
 )
 query_parser.add_argument(
     "--verbose",
-    action="store-true",
+    action="store_true",
     required=False,
     help="Output more reference information",
 )
@@ -123,7 +130,7 @@ class Runner_query(Runner):
             *,
             kb_path: str,
             query: str,
-            n_references: int = 5,
+            n_references: int,
             verbose: bool = False,
             # TODO: actually accept string args to control these clients
             chat_client: LlmChatClient | None = None,
