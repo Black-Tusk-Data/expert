@@ -48,6 +48,19 @@ query_parser.add_argument(
     required=True,
     help="Path to knowledge base",
 )
+query_parser.add_argument(
+    "--n-references",
+    dest="n_references",
+    type=int,
+    required=False,
+    help="Number of page references to fetch",
+)
+query_parser.add_argument(
+    "--verbose",
+    action="store-true",
+    required=False,
+    help="Output more reference information",
+)
 
 
 def get_default_chat_client() -> LlmChatClient:
@@ -101,12 +114,64 @@ class Runner_build(Runner):
             dest_path=str(self.kb_path),
         )
         pass
-
     pass
+
+
+class Runner_query(Runner):
+    def __init__(
+            self,
+            *,
+            kb_path: str,
+            query: str,
+            n_references: int = 5,
+            verbose: bool = False,
+            # TODO: actually accept string args to control these clients
+            chat_client: LlmChatClient | None = None,
+            embedding_client: LlmEmbeddingClient | None = None,
+            **kwargs,
+    ):
+        self.query = query
+        self.kb_path = Path(kb_path)
+        self.n_references = n_references
+        self.verbose = verbose
+
+        self.chat_client = chat_client if chat_client else get_default_chat_client()
+        self.embedding_client = embedding_client if embedding_client else get_default_embeding_client()
+        kb = KnowledgeBase(
+            path=str(self.kb_path),
+            embedding_size=self.embedding_client.get_embedding_vector_length(),
+        )
+        self.kbi = KbInterface(
+            kb,
+            chat_llm=self.chat_client,
+            embedder=self.embedding_client,
+        )
+        return
+
+    def run(self):
+        res = self.kbi.chat(
+            self.query,
+            n_references=self.n_references
+        )
+        print(res.response)
+        print("\n")
+        print("REFERENCES:")
+
+        for fragment in res.relevant_fragments:
+            metadata = fragment.metadata or {}
+            print("PAGE:", metadata["page"])
+            if self.verbose:
+                print(fragment.text)
+                print()
+            pass
+        pass
+    pass
+
 
 
 RUNNERS = {
     "build": Runner_build,
+    "query": Runner_query,
 }
 
 
@@ -121,36 +186,4 @@ class Cli:
 
     def run(self):
         self.runner.run()
-
-    # def run_query(self):
-    #     # TODO: don't hardcode all this stuff
-    #     kb = KnowledgeBase(
-    #         path=str(self.kb_path),
-    #         embedding_size=768,
-    #     )
-    #     embedder = JinaAiClient("jina-embeddings-v2-base-en")
-    #     chat_llm = OctoAiApiClient("meta-llama-3.1-8b-instruct")
-    #     summarizer = DocumentSummarizer(
-    #         # text_client=GroqClient("llama-3.1-8b-instant"),
-    #         text_client=chat_llm,
-    #         # img_client=GroqClient("llava-v1.5-7b-4096-preview"),
-    #     )
-    #     kbi = KbInterface(
-    #         kb,
-    #         chat_llm=chat_llm,
-    #         embedder=embedder,
-    #     )
-
-    #     res = kbi.chat(self.query, n_references=5)
-
-    #     print(res.response)
-    #     print("\n")
-    #     print("REFERENCES:")
-
-    #     for fragment in res.relevant_fragments:
-    #         metadata = fragment.metadata or {}
-    #         print("PAGE:", metadata["page"])
-    #         pass
-    #     return
-
     pass
