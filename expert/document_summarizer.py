@@ -21,10 +21,10 @@ class PageSummary(NamedTuple):
 
 class DocumentSummarizer:
     def __init__(
-            self,
-            *,
-            text_client: LlmChatClient,
-            img_client: LlmChatClient | None = None,
+        self,
+        *,
+        text_client: LlmChatClient,
+        img_client: LlmChatClient | None = None,
     ):
         self.text_client = text_client
         self.img_client = img_client
@@ -55,31 +55,40 @@ class DocumentSummarizer:
         blocks = []
         img_fname = image.dump_to_file(str(TMP_DIR / ".doc-image"))
         with open(img_fname, "rb") as f:
-            blocks.append(ChatBlock(
-                role="user",
-                content=f"Summarize the information contained in the following image:",
-                image_b64=base64.b64encode(f.read()).decode("utf-8"),
-            ))
+            blocks.append(
+                ChatBlock(
+                    role="user",
+                    content=f"Summarize the information contained in the following image:",
+                    image_b64=base64.b64encode(f.read()).decode("utf-8"),
+                )
+            )
         return blocks
 
-
     def _get_text_summarization_prompt(self, page: ParsedPage) -> list[ChatBlock]:
-        system_prompt = " ".join([
-            "You are a helpful expert in a huge number of topics.",
-            "You are deisgned to summarize each page of a technical document, one at a time.",
-            "Given the contents of a single page of a document, you respond with a SUCCINCT summary of the information on that page.",
-        ])
-        blocks = [ChatBlock(
-            role="system",
-            content=system_prompt,
-        )]
-        blocks.append(ChatBlock(
-            role="user",
-            content="\n".join([
-                "PAGE CONTENTS:",
-                page.text,
-            ])
-        ))
+        system_prompt = " ".join(
+            [
+                "You are a helpful expert in a huge number of topics.",
+                "You are deisgned to summarize each page of a technical document, one at a time.",
+                "Given the contents of a single page of a document, you respond with a SUCCINCT summary of the information on that page.",
+            ]
+        )
+        blocks = [
+            ChatBlock(
+                role="system",
+                content=system_prompt,
+            )
+        ]
+        blocks.append(
+            ChatBlock(
+                role="user",
+                content="\n".join(
+                    [
+                        "PAGE CONTENTS:",
+                        page.text,
+                    ]
+                ),
+            )
+        )
         return blocks
 
     pass

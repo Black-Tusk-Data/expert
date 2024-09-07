@@ -73,10 +73,12 @@ query_parser.add_argument(
 def get_default_chat_client() -> LlmChatClient:
     return GroqClient("llama-3.1-8b-instant")
 
+
 def get_default_image_client() -> LlmChatClient:
     return GroqClient("llava-v1.5-7b-4096-preview")
 
-def get_default_embeding_client()-> LlmEmbeddingClient:
+
+def get_default_embeding_client() -> LlmEmbeddingClient:
     return JinaAiClient("jina-embeddings-v2-base-en")
 
 
@@ -84,25 +86,28 @@ class Runner(abc.ABC):
     @abc.abstractmethod
     def run(self):
         return
+
     pass
 
 
 class Runner_build(Runner):
     def __init__(
-            self,
-            *,
-            kb_path: str,
-            doc_path: str,
-            index_images: bool = False,
-            # TODO: actually accept string args to control these clients
-            chat_client: LlmChatClient | None = None,
-            embedding_client: LlmEmbeddingClient | None = None,
-            **kwargs,
+        self,
+        *,
+        kb_path: str,
+        doc_path: str,
+        index_images: bool = False,
+        # TODO: actually accept string args to control these clients
+        chat_client: LlmChatClient | None = None,
+        embedding_client: LlmEmbeddingClient | None = None,
+        **kwargs,
     ):
         self.kb_path = Path(kb_path)
         self.doc_path = Path(doc_path)
         self.chat_client = chat_client if chat_client else get_default_chat_client()
-        self.embedding_client = embedding_client if embedding_client else get_default_embeding_client()
+        self.embedding_client = (
+            embedding_client if embedding_client else get_default_embeding_client()
+        )
         self.img_client = None if not index_images else get_default_image_client()
 
         self.summarizer = DocumentSummarizer(
@@ -121,21 +126,22 @@ class Runner_build(Runner):
             dest_path=str(self.kb_path),
         )
         pass
+
     pass
 
 
 class Runner_query(Runner):
     def __init__(
-            self,
-            *,
-            kb_path: str,
-            query: str,
-            n_references: int,
-            verbose: bool = False,
-            # TODO: actually accept string args to control these clients
-            chat_client: LlmChatClient | None = None,
-            embedding_client: LlmEmbeddingClient | None = None,
-            **kwargs,
+        self,
+        *,
+        kb_path: str,
+        query: str,
+        n_references: int,
+        verbose: bool = False,
+        # TODO: actually accept string args to control these clients
+        chat_client: LlmChatClient | None = None,
+        embedding_client: LlmEmbeddingClient | None = None,
+        **kwargs,
     ):
         self.query = query
         self.kb_path = Path(kb_path)
@@ -143,7 +149,9 @@ class Runner_query(Runner):
         self.verbose = verbose
 
         self.chat_client = chat_client if chat_client else get_default_chat_client()
-        self.embedding_client = embedding_client if embedding_client else get_default_embeding_client()
+        self.embedding_client = (
+            embedding_client if embedding_client else get_default_embeding_client()
+        )
         kb = KnowledgeBase(
             path=str(self.kb_path),
             embedding_size=self.embedding_client.get_embedding_vector_length(),
@@ -156,10 +164,7 @@ class Runner_query(Runner):
         return
 
     def run(self):
-        res = self.kbi.chat(
-            self.query,
-            n_references=self.n_references
-        )
+        res = self.kbi.chat(self.query, n_references=self.n_references)
         print(res.response)
         print("\n")
         print("REFERENCES:")
@@ -172,8 +177,8 @@ class Runner_query(Runner):
                 print()
             pass
         pass
-    pass
 
+    pass
 
 
 RUNNERS = {
@@ -193,4 +198,5 @@ class Cli:
 
     def run(self):
         self.runner.run()
+
     pass
