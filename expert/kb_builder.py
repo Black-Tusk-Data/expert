@@ -4,9 +4,11 @@ from pathlib import Path
 
 from tqdm.auto import tqdm
 
+from expert_doc import get_paged_document_parser
 from expert_llm import LlmEmbeddingClient, LlmChatClient
-from expert_doc import PdfParser
 from expert_kb import KnowledgeBase
+
+from expert.document_summarizer import DocumentSummarizer
 
 
 class KbBuilder(abc.ABC):
@@ -14,7 +16,7 @@ class KbBuilder(abc.ABC):
             self,
             *,
             embedder: LlmEmbeddingClient,
-            summarizer: LlmChatClient,
+            summarizer: DocumentSummarizer,
     ) -> None:
         self.embedder = embedder
         self.summarizer = summarizer
@@ -32,16 +34,16 @@ class KbBuilder(abc.ABC):
     pass
 
 
-class PdfKbBuilder(KbBuilder):
+class DocumentKbBuilder(KbBuilder):
     def __init__(
             self,
             *,
             embedder: LlmEmbeddingClient,
-            summarizer: LlmChatClient,
-            pdf_path: Path,
+            summarizer: DocumentSummarizer,
+            path: Path,
     ) -> None:
         super().__init__(embedder=embedder, summarizer=summarizer)
-        self.pdf_path = pdf_path
+        self.path = path
         return
 
     def build_kb(
@@ -55,7 +57,7 @@ class PdfKbBuilder(KbBuilder):
                 os.remove(dest_path)
                 pass
             pass
-        pdf_parser = PdfParser(self.pdf_path)
+        parser = get_paged_document_parser(self.path)
         kb = KnowledgeBase(
             path=dest_path,
             embedding_size=self.embedder.get_embedding_vector_length(),
@@ -68,7 +70,7 @@ class PdfKbBuilder(KbBuilder):
         # page numbers are '1' indexed...
         last_ingested_page_idx = (last_ingested_page or 0) - 1
 
-        pages = list(pdf_parser.iter_pages())
+        pages = list(parser.iter_pages())
         progress_bar = tqdm(range(len(pages)))
         for i, page in enumerate(pages):
             if i <= last_ingested_page_idx:

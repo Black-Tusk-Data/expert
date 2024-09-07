@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
+from btdcore.logging import setup_logging
 
 from expert.cli import Cli
+
+
+setup_logging()
 
 
 def main():
