@@ -4,10 +4,11 @@ import os
 from pathlib import Path
 from setuptools import find_packages, setup
 
+from expert.VERSION import VERSION
 
 setup(
     name="expert",
-    version="v0.1.0",
+    version=f"v{VERSION}",
     description="'expert' knowledge assistant",
     author="Liam Tengelis",
     author_email="liam.tengelis@blacktuskdata.com",

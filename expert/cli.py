@@ -17,11 +17,14 @@ from expert.document_summarizer import DocumentSummarizer
 from expert.kb_builder import DocumentKbBuilder
 from expert.kb_interface import KbInterface
 
+from expert.VERSION import VERSION
+
 
 parser = argparse.ArgumentParser(
     prog="Expert Knowledge Assistant",
     description="",
 )
+parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
 subparsers = parser.add_subparsers(dest="command")
 
 build_parser = subparsers.add_parser("build")
