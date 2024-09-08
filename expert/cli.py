@@ -145,6 +145,8 @@ class Runner_query(Runner):
     ):
         self.query = query
         self.kb_path = Path(kb_path)
+        if not os.path.exists(kb_path):
+            raise Exception(f"expected a knowledge base to be defined at '{kb_path}'")
         self.n_references = n_references
         self.verbose = verbose
 
