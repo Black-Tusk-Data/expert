@@ -7,9 +7,9 @@ from expert_doc import get_paged_document_parser
 from expert_llm import (
     GroqClient,
     JinaAiClient,
-    OctoAiApiClient,
     LlmChatClient,
     LlmEmbeddingClient,
+    TogetherAiClient,
 )
 from expert_kb import KnowledgeBase
 
@@ -74,7 +74,7 @@ query_parser.add_argument(
 
 
 def get_default_chat_client() -> LlmChatClient:
-    return GroqClient("llama-3.1-8b-instant")
+    return TogetherAiClient("meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo")
 
 
 def get_default_image_client() -> LlmChatClient:

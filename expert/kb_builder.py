@@ -4,6 +4,8 @@ from pathlib import Path
 
 from tqdm.auto import tqdm
 
+from btdcore.utils import map_multithreaded, batched
+from expert import document_summarizer
 from expert_doc import get_paged_document_parser
 from expert_llm import LlmEmbeddingClient, LlmChatClient
 from expert_kb import KnowledgeBase
@@ -46,6 +48,37 @@ class DocumentKbBuilder(KbBuilder):
         self.path = path
         return
 
+    def _add_page_summary(
+        self,
+        *,
+        summary,
+        page_number: int,
+        kb,
+        page,
+    ):
+        texts = [
+            summary.text_summary,
+            *summary.img_summaries,
+        ]
+        embeddings = self.embedder.embed(texts)
+        kb.add_fragment(
+            fragment_id=f"page-{page_number}",
+            text=texts[0],
+            embedding=embeddings[0],
+            metadata={"page": page_number},
+        )
+        for j in range(1, len(texts)):
+            text = texts[j]
+            embed = embeddings[j]
+            kb.add_fragment(
+                fragment_id=f"page-{page_number}-image-{j}",
+                text=text,
+                embedding=embed,
+                metadata={"page": page_number},
+            )
+            pass
+        return
+
     def build_kb(
         self,
         dest_path: str,
@@ -71,36 +104,40 @@ class DocumentKbBuilder(KbBuilder):
         )[0]["last_page"]
         # page numbers are '1' indexed...
         last_ingested_page_idx = (last_ingested_page or 0) - 1
+        if last_ingested_page_idx > -1:
+            print("last ingested page:", last_ingested_page_idx + 1)
+            pass
 
         pages = list(parser.iter_pages())
         progress_bar = tqdm(range(len(pages)))
-        for i, page in enumerate(pages):
-            if i <= last_ingested_page_idx:
-                progress_bar.update(1)
-                continue
-            summary = self.summarizer.summarize_page(page)
-            texts = [
-                summary.text_summary,
-                *summary.img_summaries,
-            ]
-            embeddings = self.embedder.embed(texts)
-            kb.add_fragment(
-                fragment_id=f"page-{i + 1}",
-                text=texts[0],
-                embedding=embeddings[0],
-                metadata={"page": i + 1},
-            )
-            for j in range(1, len(texts)):
-                text = texts[j]
-                embed = embeddings[j]
-                kb.add_fragment(
-                    fragment_id=f"page-{i + 1}-image-{j}",
-                    text=text,
-                    embedding=embed,
-                    metadata={"page": i + 1},
-                )
-                pass
+        for i in range(0, last_ingested_page_idx + 1):
             progress_bar.update(1)
+            pass
+
+        batch_size = self.summarizer.text_client.get_max_concurrent_requests()
+        batches = batched(
+            pages[last_ingested_page_idx + 1 :],
+            batch_size,
+        )
+
+        for batch_idx, batch in enumerate(batches):
+            summaries = map_multithreaded(
+                self.summarizer.summarize_page,
+                batch,
+                len(batch),
+            )
+            for i, (page, summary) in enumerate(zip(batch, summaries)):
+                page_number = (
+                    last_ingested_page_idx + 1 + (batch_idx * batch_size + i + 1)
+                )
+                self._add_page_summary(
+                    summary=summary,
+                    page_number=page_number,
+                    kb=kb,
+                    page=page,
+                )
+                progress_bar.update(1)
+                pass
             pass
         return kb
 

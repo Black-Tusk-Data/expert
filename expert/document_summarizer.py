@@ -5,7 +5,6 @@ from typing import NamedTuple
 from expert_doc import Image, ParsedPage
 from expert_llm import (
     LlmChatClient,
-    LlmEmbeddingClient,
     ChatBlock,
 )
 
