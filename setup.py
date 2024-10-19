@@ -7,7 +7,7 @@ from setuptools import find_packages, setup
 from expert.VERSION import VERSION
 
 setup(
-    name="expert",
+    name="expert-cli",
     version=f"v{VERSION}",
     description="'expert' knowledge assistant",
     author="Liam Tengelis",

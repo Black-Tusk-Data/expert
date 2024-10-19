@@ -74,7 +74,19 @@ query_parser.add_argument(
 
 
 def get_default_chat_client() -> LlmChatClient:
-    return TogetherAiClient("meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo")
+    client = TogetherAiClient("meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo")
+    if os.environ.get("RATE_LIMIT_WINDOW"):
+        assert os.environ.get("RATE_LIMIT_REQUESTS")
+        client.override_rate_limit(
+            rate_limit_window_seconds=int(
+                os.environ["RATE_LIMIT_WINDOW"]
+            ),
+            rate_limit_requests=int(
+                os.environ["RATE_LIMIT_REQUESTS"]
+            )
+        )
+        pass
+    return client
 
 
 def get_default_image_client() -> LlmChatClient:
